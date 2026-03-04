@@ -71,6 +71,14 @@ uploaded = st.sidebar.file_uploader("Upload CSV (optional)", type=["csv"])
 df = load_data(uploaded)
 
 if df.empty:
+    st.error("No data available. Please upload a valid CSV or check the sample file.")
+    st.stop()
+
+# Ensure essential columns exist before proceeding. We need at least sales and identifiers.
+required = ['Sales', 'Profit', 'Order ID']
+missing = [c for c in required if c not in df.columns]
+if missing:
+    st.error(f"Dataset is missing required columns: {', '.join(missing)}. Cannot display dashboard.")
     st.stop()
 
 # --- Sidebar Filters & Instructions ---
@@ -90,26 +98,43 @@ with st.sidebar:
     st.markdown("## 🎛️ Filters")
 
     # use multiselect so beginners can select multiple or keep "All" automatically
-    years = sorted(df['Year'].dropna().unique().tolist())
+    # Some uploaded files might not have these columns; handle missing keys gracefully.
+    if 'Year' in df.columns:
+        years = sorted(df['Year'].dropna().unique().tolist())
+    else:
+        years = []
+        st.warning("Dataset does not contain a 'Year' column; year filtering will be skipped.")
     selected_year = st.multiselect(
         "📅 Year (pick one or more, blank = all)",
         options=years,
-        default=years if len(years) <= 3 else []  # start with none if many options
+        default=years if len(years) <= 3 else []
     )
 
-    regions = sorted(df['Region'].dropna().unique().tolist())
+    if 'Region' in df.columns:
+        regions = sorted(df['Region'].dropna().unique().tolist())
+    else:
+        regions = []
+        st.warning("Dataset does not contain a 'Region' column; region filtering will be skipped.")
     selected_region = st.multiselect(
         "🌍 Region (pick one or more)",
         options=regions,
     )
 
-    categories = sorted(df['Category'].dropna().unique().tolist())
+    if 'Category' in df.columns:
+        categories = sorted(df['Category'].dropna().unique().tolist())
+    else:
+        categories = []
+        st.warning("Dataset does not contain a 'Category' column; category filtering will be skipped.")
     selected_category = st.multiselect(
         "📦 Category (pick one or more)",
         options=categories,
     )
 
-    segments = sorted(df['Segment'].dropna().unique().tolist())
+    if 'Segment' in df.columns:
+        segments = sorted(df['Segment'].dropna().unique().tolist())
+    else:
+        segments = []
+        st.warning("Dataset does not contain a 'Segment' column; segment filtering will be skipped.")
     selected_segment = st.multiselect(
         "👥 Segment (pick one or more)",
         options=segments,
@@ -130,14 +155,15 @@ with st.sidebar:
 
 # --- Apply Filters ---
 filtered = df.copy()
-# each selection is a list; if it's non-empty, keep only those values
-if selected_year:
+# each selection is a list; if it's non-empty, keep only those values,
+# but only if the underlying column exists in the dataframe.
+if selected_year and 'Year' in filtered.columns:
     filtered = filtered[filtered['Year'].isin(selected_year)]
-if selected_region:
+if selected_region and 'Region' in filtered.columns:
     filtered = filtered[filtered['Region'].isin(selected_region)]
-if selected_category:
+if selected_category and 'Category' in filtered.columns:
     filtered = filtered[filtered['Category'].isin(selected_category)]
-if selected_segment:
+if selected_segment and 'Segment' in filtered.columns:
     filtered = filtered[filtered['Segment'].isin(selected_segment)]
 
 # warn if no rows after filtering
@@ -164,7 +190,10 @@ with st.expander("🔍 View raw data (filtered)", expanded=False):
 # ======================= OVERVIEW =======================
 if view_option == "Overview":
     st.markdown("### What you'll see\nThe overview gives you high-level KPIs and breakdowns by category, region, segment, and shipping mode. Use filters to narrow the data.")
-    total_sales = filtered['Sales'].sum()
+    if 'Sales' not in filtered.columns:
+        st.error("Cannot display overview: 'Sales' column missing.")
+    else:
+        total_sales = filtered['Sales'].sum()
     total_profit = filtered['Profit'].sum()
     total_orders = filtered['Order ID'].nunique()
     avg_discount = filtered['Discount'].mean() * 100
@@ -182,54 +211,70 @@ if view_option == "Overview":
     col1, col2 = st.columns(2)
 
     with col1:
-        cat_sales = filtered.groupby('Category')[['Sales', 'Profit']].sum().reset_index()
-        fig = px.bar(
-            cat_sales, x='Category', y=['Sales', 'Profit'],
-            barmode='group', title='Sales & Profit by Category',
-            color_discrete_sequence=['#667eea', '#764ba2'],
-        )
-        fig.update_layout(template='plotly_white', legend_title_text='', height=400)
-        st.plotly_chart(fig, use_container_width=True)
+        if 'Category' in filtered.columns:
+            cat_sales = filtered.groupby('Category')[['Sales', 'Profit']].sum().reset_index()
+            fig = px.bar(
+                cat_sales, x='Category', y=['Sales', 'Profit'],
+                barmode='group', title='Sales & Profit by Category',
+                color_discrete_sequence=['#667eea', '#764ba2'],
+            )
+            fig.update_layout(template='plotly_white', legend_title_text='', height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Category column not available; skipping category breakdown.")
 
     with col2:
-        seg_sales = filtered.groupby('Segment')['Sales'].sum().reset_index()
-        fig = px.pie(
-            seg_sales, values='Sales', names='Segment',
-            title='Sales Distribution by Segment',
-            color_discrete_sequence=['#667eea', '#764ba2', '#f093fb'],
-            hole=0.4,
-        )
-        fig.update_layout(template='plotly_white', height=400)
-        st.plotly_chart(fig, use_container_width=True)
+        if 'Segment' in filtered.columns:
+            seg_sales = filtered.groupby('Segment')['Sales'].sum().reset_index()
+            fig = px.pie(
+                seg_sales, values='Sales', names='Segment',
+                title='Sales Distribution by Segment',
+                color_discrete_sequence=['#667eea', '#764ba2', '#f093fb'],
+                hole=0.4,
+            )
+            fig.update_layout(template='plotly_white', height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Segment column not available; skipping segment distribution.")
 
     col3, col4 = st.columns(2)
 
     with col3:
-        region_data = filtered.groupby('Region')[['Sales', 'Profit']].sum().reset_index()
-        fig = px.bar(
-            region_data, x='Region', y=['Sales', 'Profit'],
-            barmode='group', title='Sales & Profit by Region',
-            color_discrete_sequence=['#667eea', '#764ba2'],
-        )
-        fig.update_layout(template='plotly_white', height=400)
-        st.plotly_chart(fig, use_container_width=True)
+        if 'Region' in filtered.columns:
+            region_data = filtered.groupby('Region')[['Sales', 'Profit']].sum().reset_index()
+            fig = px.bar(
+                region_data, x='Region', y=['Sales', 'Profit'],
+                barmode='group', title='Sales & Profit by Region',
+                color_discrete_sequence=['#667eea', '#764ba2'],
+            )
+            fig.update_layout(template='plotly_white', height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Region column not available; skipping regional breakdown.")
 
     with col4:
-        ship_data = filtered.groupby('Ship Mode')['Sales'].sum().reset_index()
-        fig = px.pie(
-            ship_data, values='Sales', names='Ship Mode',
-            title='Sales by Ship Mode',
-            color_discrete_sequence=['#667eea', '#764ba2', '#f093fb', '#a8edea'],
-            hole=0.4,
-        )
-        fig.update_layout(template='plotly_white', height=400)
-        st.plotly_chart(fig, use_container_width=True)
+        if 'Ship Mode' in filtered.columns:
+            ship_data = filtered.groupby('Ship Mode')['Sales'].sum().reset_index()
+            fig = px.pie(
+                ship_data, values='Sales', names='Ship Mode',
+                title='Sales by Ship Mode',
+                color_discrete_sequence=['#667eea', '#764ba2', '#f093fb', '#a8edea'],
+                hole=0.4,
+            )
+            fig.update_layout(template='plotly_white', height=400)
+            st.plotly_chart(fig, use_container_width=True)
+        else:
+            st.info("Ship Mode column not available; skipping shipping analysis.")
 
 
 # ======================= TOP PRODUCTS =======================
 elif view_option == "Top Products":
     st.markdown("### Product performance\nExplore which items are driving revenue and profit. Adjust the slider to show more or fewer products.")
-    n = st.slider("Number of products to display", 5, 20, 10)
+    # require Sales and Profit columns
+    if 'Sales' not in filtered.columns:
+        st.error("Cannot show top products: 'Sales' column missing.")
+    else:
+        n = st.slider("Number of products to display", 5, 20, 10)
 
     col1, col2 = st.columns(2)
 
@@ -276,7 +321,10 @@ elif view_option == "Top Products":
 # ======================= SALES TRENDS =======================
 elif view_option == "Sales Trends":
     st.markdown("### Trend analysis\nSee how sales and profit change over time. Hover over the lines for exact values and use filters to compare periods.")
-    monthly = filtered.set_index('Order Date').resample('M')[['Sales', 'Profit']].sum().reset_index()
+    if 'Order Date' not in filtered.columns or 'Sales' not in filtered.columns:
+        st.error("Cannot show sales trends: 'Order Date' or 'Sales' column missing.")
+    else:
+        monthly = filtered.set_index('Order Date').resample('M')[['Sales', 'Profit']].sum().reset_index()
 
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -336,7 +384,10 @@ elif view_option == "Sales Trends":
 # ======================= PROFIT ANALYSIS =======================
 elif view_option == "Profit Analysis":
     st.markdown("### Profit insights\nCheck how discounts affect profit and identify loss‑making products. Use the scatter plots and bar charts to spot opportunities.")
-    col1, col2 = st.columns(2)
+    if 'Profit' not in filtered.columns:
+        st.error("Cannot show profit analysis: 'Profit' column missing.")
+    else:
+        col1, col2 = st.columns(2)
 
     with col1:
         fig = px.scatter(
@@ -395,7 +446,10 @@ elif view_option == "Profit Analysis":
 # ======================= REGIONAL BREAKDOWN =======================
 elif view_option == "Regional Breakdown":
     st.markdown("### Geography view\nCompare performance across regions, states, and cities. The data table at the bottom gives an exact summary.")
-    region_summary = filtered.groupby('Region').agg(
+    if 'Region' not in filtered.columns or 'Sales' not in filtered.columns:
+        st.error("Cannot show regional breakdown: required columns missing.")
+    else:
+        region_summary = filtered.groupby('Region').agg(
         Sales=('Sales', 'sum'),
         Profit=('Profit', 'sum'),
         Orders=('Order ID', 'nunique'),
