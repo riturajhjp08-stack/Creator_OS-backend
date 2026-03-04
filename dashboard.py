@@ -6,9 +6,22 @@ from io import StringIO
 
 # --- Page Config ---
 st.set_page_config(
-    page_title="Superstore Sales Dashboard",
+    page_title="Business Insight Dashboard",
     page_icon="📊",
     layout="wide",
+)
+
+# --- Home description ---
+st.markdown("""
+# Business Insight Dashboard
+
+This dashboard provides interactive analysis of your sales data. Upload a CSV or
+use the sample dataset to explore revenue, profit, product performance, and
+regional trends. Use the sidebar filters and view selector to navigate between
+charts and summaries.
+
+*Suitable for first‑time users & beginners.*
+"""
 )
 
 # --- Custom CSS ---
@@ -142,61 +155,79 @@ with st.sidebar:
         view_option = st.radio("📊 Choose a view", options=["Overview"])
     else:
         st.markdown("## 🎛️ Filters")
-        # use multiselect so beginners can select multiple or keep "All" automatically
-        # Some uploaded files might not have these columns; handle missing keys gracefully.
-        if 'Year' in df.columns:
-            years = sorted(df['Year'].dropna().unique().tolist())
-        else:
-            years = []
-            st.warning("Dataset does not contain a 'Year' column; year filtering will be skipped.")
-        selected_year = st.multiselect(
-            "📅 Year (pick one or more, blank = all)",
-            options=years,
-            default=years if len(years) <= 3 else []
-        )
 
-        if 'Region' in df.columns:
-            regions = sorted(df['Region'].dropna().unique().tolist())
-        else:
-            regions = []
-            st.warning("Dataset does not contain a 'Region' column; region filtering will be skipped.")
-        selected_region = st.multiselect(
-            "🌍 Region (pick one or more)",
-            options=regions,
-        )
+    # use multiselect so beginners can select multiple or keep "All" automatically
+    # Some uploaded files might not have these columns; handle missing keys gracefully.
+    if 'Year' in df.columns:
+        years = sorted(df['Year'].dropna().unique().tolist())
+    else:
+        years = []
+        st.warning("Dataset does not contain a 'Year' column; year filtering will be skipped.")
+    selected_year = st.multiselect(
+        "📅 Year (pick one or more, blank = all)",
+        options=years,
+        default=years if len(years) <= 3 else []
+    )
 
-        if 'Category' in df.columns:
-            categories = sorted(df['Category'].dropna().unique().tolist())
-        else:
-            categories = []
-            st.warning("Dataset does not contain a 'Category' column; category filtering will be skipped.")
-        selected_category = st.multiselect(
-            "📦 Category (pick one or more)",
-            options=categories,
-        )
+    if 'Region' in df.columns:
+        regions = sorted(df['Region'].dropna().unique().tolist())
+    else:
+        regions = []
+        st.warning("Dataset does not contain a 'Region' column; region filtering will be skipped.")
+    selected_region = st.multiselect(
+        "🌍 Region (pick one or more)",
+        options=regions,
+    )
 
-        if 'Segment' in df.columns:
-            segments = sorted(df['Segment'].dropna().unique().tolist())
-        else:
-            segments = []
-            st.warning("Dataset does not contain a 'Segment' column; segment filtering will be skipped.")
-        selected_segment = st.multiselect(
-            "👥 Segment (pick one or more)",
-            options=segments,
-        )
+    if 'Category' in df.columns:
+        categories = sorted(df['Category'].dropna().unique().tolist())
+    else:
+        categories = []
+        st.warning("Dataset does not contain a 'Category' column; category filtering will be skipped.")
+    selected_category = st.multiselect(
+        "📦 Category (pick one or more)",
+        options=categories,
+    )
 
-        st.markdown("---")
+    if 'Segment' in df.columns:
+        segments = sorted(df['Segment'].dropna().unique().tolist())
+    else:
+        segments = []
+        st.warning("Dataset does not contain a 'Segment' column; segment filtering will be skipped.")
+    selected_segment = st.multiselect(
+        "👥 Segment (pick one or more)",
+        options=segments,
+    )
 
-        view_option = st.radio(
-            "📊 Choose a view",  # radio makes it easier to see all options
-            options=[
-                "Overview",
-                "Top Products",
-                "Sales Trends",
-                "Profit Analysis",
-                "Regional Breakdown",
-            ],
-        )
+    st.markdown("---")
+
+    view_option = st.radio(
+        "📊 Choose a view",  # radio makes it easier to see all options
+        options=[
+            "Overview",
+            "Top Products",
+            "Sales Trends",
+            "Profit Analysis",
+            "Regional Breakdown",
+        ],
+    )
+
+    # feedback after view selector
+    with st.sidebar.expander("💬 Feedback", expanded=False):
+        with st.form("feedback_form", clear_on_submit=True):
+            rating = st.slider("Rate this dashboard", 1, 5, 3)
+            comments = st.text_area("Comments (optional)")
+            submitted = st.form_submit_button("Submit")
+            if submitted:
+                try:
+                    import datetime
+                    fb = pd.DataFrame([{"timestamp": datetime.datetime.now(),
+                                        "rating": rating,
+                                        "comments": comments}])
+                    fb.to_csv("feedback.csv", mode="a", header=not pd.io.common.file_exists("feedback.csv"), index=False)
+                    st.success("Thanks for your feedback!")
+                except Exception:
+                    st.error("Could not save feedback.")
 
 # --- Apply Filters ---
 filtered = df.copy()
