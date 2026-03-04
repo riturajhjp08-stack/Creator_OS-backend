@@ -229,16 +229,37 @@ st.markdown('<div class="sub-header">Interactive analytics for sales, profit & p
 if generic_mode:
     st.markdown("## Generic dataset explorer")
 
-    # Basic KPIs
+    # Basic KPIs (show product-focused metrics if a product-like column exists)
     n_rows, n_cols = filtered.shape
     num_cols = filtered.select_dtypes(include=['number']).columns.tolist()
     cat_cols = filtered.select_dtypes(exclude=['number']).columns.tolist()
 
+    # detect a product-like column
+    prod_col = None
+    for c in filtered.columns:
+        cl = c.lower()
+        if any(k in cl for k in ['product', 'item', 'sku']):
+            prod_col = c
+            break
+
     k1, k2, k3, k4 = st.columns(4)
-    k1.metric("Rows", f"{n_rows:,}")
-    k2.metric("Columns", f"{n_cols}")
-    k3.metric("Numeric cols", f"{len(num_cols)}")
-    k4.metric("Categorical cols", f"{len(cat_cols)}")
+    if prod_col:
+        # product-focused KPIs
+        prod_count = int(filtered[prod_col].nunique())
+        try:
+            top_prod = filtered[prod_col].mode(dropna=True)[0]
+        except Exception:
+            top_prod = "-"
+        k1.metric("Unique products", f"{prod_count}")
+        k2.metric("Top product", f"{top_prod}")
+        k3.metric("Rows", f"{n_rows:,}")
+        k4.metric("Columns", f"{n_cols}")
+    else:
+        # generic KPIs
+        k1.metric("Rows", f"{n_rows:,}")
+        k2.metric("Columns", f"{n_cols}")
+        k3.metric("Numeric fields", f"{len(num_cols)}")
+        k4.metric("Categorical fields", f"{len(cat_cols)}")
 
     st.markdown("---")
 
