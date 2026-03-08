@@ -13,44 +13,59 @@ st.set_page_config(
 
 # --- Home description ---
 st.markdown("""
-# Business Insight Dashboard
+<div style="text-align: center; padding: 3rem 0; background: linear-gradient(135deg, #667eea10 0%, #764ba210 100%); border-radius: 12px; margin-bottom: 2rem;">
+  <h1 style="margin: 0; color: #333; font-size: 2.5rem; font-weight: 700;">📊 Business Insights</h1>
+  <p style="margin: 0.5rem 0 0 0; color: #666; font-size: 1.1rem;">Analyze your data in seconds</p>
+</div>
+""", unsafe_allow_html=True)
 
-This dashboard provides interactive analysis of your sales data. Upload a CSV or
-use the sample dataset to explore revenue, profit, product performance, and
-regional trends. Use the sidebar filters and view selector to navigate between
-charts and summaries.
+st.markdown("---")
 
-*Suitable for first‑time users & beginners.*
-"""
+st.markdown("""
+<div style="text-align: center; padding: 2rem; color: #666;">
+  <p><strong>👈 Use the sidebar to upload data, filter, and explore.</strong></p>
+  <p style="font-size: 0.95rem; margin-top: 1rem;">Upload a CSV file to get started, or use the sample dataset.</p>
+</div>
+""", unsafe_allow_html=True)
 )
 
 # --- Custom CSS ---
 st.markdown("""
 <style>
-    .block-container { padding-top: 1.5rem; padding-bottom: 1rem; }
+    * { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+    body { background: #f8f9fa; }
+    .block-container { 
+        padding-top: 1rem; 
+        padding-bottom: 1rem; 
+        padding-left: 2rem;
+        padding-right: 2rem;
+    }
     [data-testid="stMetric"] {
         background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        padding: 15px 20px;
+        padding: 20px 25px;
         border-radius: 12px;
         color: white;
-        box-shadow: 0 4px 15px rgba(102,126,234,0.3);
+        box-shadow: 0 4px 15px rgba(102,126,234,0.2);
+        border: 1px solid rgba(102,126,234,0.3);
     }
-    [data-testid="stMetric"] label { color: rgba(255,255,255,0.85) !important; font-size: 0.85rem !important; }
-    [data-testid="stMetric"] [data-testid="stMetricValue"] { color: white !important; font-size: 1.8rem !important; }
-    [data-testid="stMetric"] [data-testid="stMetricDelta"] { color: rgba(255,255,255,0.9) !important; }
-    div[data-testid="stSidebar"] { background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%); }
+    [data-testid="stMetric"] label { color: rgba(255,255,255,0.85) !important; font-size: 0.85rem !important; font-weight: 600; }
+    [data-testid="stMetric"] [data-testid="stMetricValue"] { color: white !important; font-size: 2rem !important; font-weight: 700; }
+    div[data-testid="stSidebar"] { 
+        background: linear-gradient(180deg, #1a1a2e 0%, #16213e 100%);
+        backdrop-filter: blur(10px);
+    }
     div[data-testid="stSidebar"] * { color: white !important; }
-    .main-header {
-        font-size: 2.5rem;
-        font-weight: 700;
-        background: linear-gradient(90deg, #667eea, #764ba2);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        margin: 1rem 0 0.5rem 0;
-        text-align: center;
-        white-space: nowrap;
+    .main { background: #ffffff; }
+    hr { border: 1px solid #e0e0e0 !important; }
+    h1, h2, h3 { color: #1a1a2e; }
+    .chart-container {
+        background: white;
+        border-radius: 12px;
+        padding: 1.5rem;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        border: 1px solid #f0f0f0;
+        margin-bottom: 2rem;
     }
-    .sub-header { font-size: 1rem; color: #888; margin-bottom: 1.5rem; text-align: center; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -252,13 +267,9 @@ else:
 if filtered.empty:
     st.warning("No records match the selected filters. Please adjust the year/region/category/segment selections or upload a different dataset.")
 
-# --- Header ---
-st.markdown('<div class="main-header">Superstore Sales Dashboard</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-header">Interactive analytics for sales, profit & product performance</div>', unsafe_allow_html=True)
-
 # if generic_mode, provide a friendly, visual explorer and stop
 if generic_mode:
-    st.markdown("## Generic dataset explorer")
+    st.markdown("### Dataset Explorer")
 
     # Basic KPIs (show product-focused metrics if a product-like column exists)
     n_rows, n_cols = filtered.shape
@@ -354,7 +365,7 @@ with st.expander("🔍 View raw data (filtered)", expanded=False):
 
 # ======================= OVERVIEW =======================
 if view_option == "Overview":
-    st.markdown("### What you'll see\nThe overview gives you high-level KPIs and breakdowns by category, region, segment, and shipping mode. Use filters to narrow the data.")
+    st.markdown("### Overview")
     if 'Sales' not in filtered.columns:
         st.error("Cannot display overview: 'Sales' column missing.")
     else:
@@ -437,7 +448,7 @@ if view_option == "Overview":
 
 # ======================= TOP PRODUCTS =======================
 elif view_option == "Top Products":
-    st.markdown("### Product performance\nExplore which items are driving revenue and profit. Adjust the slider to show more or fewer products.")
+    st.markdown("### Top Products")
     # require Sales and Profit columns
     if 'Sales' not in filtered.columns:
         st.error("Cannot show top products: 'Sales' column missing.")
@@ -488,7 +499,7 @@ elif view_option == "Top Products":
 
 # ======================= SALES TRENDS =======================
 elif view_option == "Sales Trends":
-    st.markdown("### Trend analysis\nSee how sales and profit change over time. Hover over the lines for exact values and use filters to compare periods.")
+    st.markdown("### Sales Trends")
     if 'Order Date' not in filtered.columns or 'Sales' not in filtered.columns:
         st.error("Cannot show sales trends: 'Order Date' or 'Sales' column missing.")
     else:
@@ -551,7 +562,7 @@ elif view_option == "Sales Trends":
 
 # ======================= PROFIT ANALYSIS =======================
 elif view_option == "Profit Analysis":
-    st.markdown("### Profit insights\nCheck how discounts affect profit and identify loss‑making products. Use the scatter plots and bar charts to spot opportunities.")
+    st.markdown("### Profit Analysis")
     if 'Profit' not in filtered.columns:
         st.error("Cannot show profit analysis: 'Profit' column missing.")
     else:
