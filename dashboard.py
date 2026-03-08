@@ -27,7 +27,6 @@ st.markdown("""
   <p style="font-size: 0.95rem; margin-top: 1rem;">Upload a CSV file to get started, or use the sample dataset.</p>
 </div>
 """, unsafe_allow_html=True)
-)
 
 # --- Custom CSS ---
 st.markdown("""
