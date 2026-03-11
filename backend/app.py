@@ -4,7 +4,7 @@ from flask import Flask, request, g, has_request_context
 from flask_cors import CORS
 from flask_jwt_extended import JWTManager
 from backend.config import config, validate_production_config
-from extensions import limiter
+from backend.extensions import limiter
 from models import db
 from sqlalchemy import inspect, text
 import os
