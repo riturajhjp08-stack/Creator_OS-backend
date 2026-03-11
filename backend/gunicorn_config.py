@@ -25,8 +25,18 @@ timeout = _get_int('TIMEOUT', 120)
 keepalive = _get_int('KEEPALIVE', 5)
 
 # Logging
-accesslog = os.environ.get('ACCESS_LOG', 'logs/access.log')
-errorlog = os.environ.get('ERROR_LOG', 'logs/error.log')
+def _resolve_log_path(env_name, default_path):
+    value = os.environ.get(env_name)
+    if value:
+        return value
+    log_dir = os.path.dirname(default_path)
+    if log_dir and not os.path.isdir(log_dir):
+        return "-"
+    return default_path
+
+
+accesslog = _resolve_log_path('ACCESS_LOG', 'logs/access.log')
+errorlog = _resolve_log_path('ERROR_LOG', 'logs/error.log')
 loglevel = os.environ.get('LOG_LEVEL', 'info')
 access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s" %(D)s'
 
